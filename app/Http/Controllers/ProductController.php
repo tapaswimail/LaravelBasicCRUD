@@ -6,6 +6,8 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\Rule;
+use App\Models\User;
 
 class ProductController extends Controller
 {
@@ -135,5 +137,41 @@ class ProductController extends Controller
         
         return redirect()->route('products.index')->with('success','Product Deleted successfully');
         
+    }
+    //Logic for registering new users
+    public function registeruser(Request $request){
+        $result=$request->validate([
+            'name'=>['required','min:3','max:30',Rule::unique('users','name')],
+            'email'=>['required','email',Rule::unique('users','name')],
+            'password'=>['required','min:8','max:50']
+
+        ]);
+
+        //Hash password
+        $result['password']=bcrypt($result['password']);
+        //Save data in mysql using User Model
+        $user=User::create($result);
+        auth()->login($user);
+        return redirect('/u_r_registered'); 
+
+        //return 'Hello from our controller';
+    }
+
+    public function loginuser(Request $request){
+        $result=$request->validate([
+            'userId'=>'required',
+            'password'=>'required'
+        ]);
+        
+        if(auth()->attempt(['name'=>$result['userId'],'password'=>$result['password']])){
+            $request->session()->regenerate();
+        }
+
+        return redirect()->route('products.index')->with('success','You have logged in successfully');
+    }
+
+    public function logout(){
+        auth()->logout();
+        return redirect('/');
     }
 }
